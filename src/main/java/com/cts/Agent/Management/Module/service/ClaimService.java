@@ -1,5 +1,8 @@
 package com.cts.Agent.Management.Module.service;
-
+import com.cts.Agent.Management.Module.dto.ClaimStatusUpdateRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import com.cts.Agent.Management.Module.dto.ClaimCreateRequest;
 import com.cts.Agent.Management.Module.dto.ClaimResponse;
 import com.cts.Agent.Management.Module.exception.ClaimNotFoundException;
@@ -51,5 +54,33 @@ public class ClaimService {
         Claim claim = claimRepository.findById(id)
                 .orElseThrow(() -> new ClaimNotFoundException(id));
         return convertToResponse(claim);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ClaimResponse> getClaims(
+            Claim.ClaimStatus status,
+            Long policyId,
+            Long customerId,
+            int page,
+            int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Claim> claims = claimRepository.findClaimsWithFilters(status, policyId, customerId, pageable);
+        return claims.map(this::convertToResponse);
+    }
+
+    @Transactional
+    public ClaimResponse updateClaimStatus(Long id, ClaimStatusUpdateRequest request) {
+        Claim claim = claimRepository.findById(id)
+                .orElseThrow(() -> new ClaimNotFoundException(id));
+
+        if (claim.getStatus() != Claim.ClaimStatus.FILED ||
+                request.getNewStatus() != Claim.ClaimStatus.UNDER_REVIEW) {
+            throw new IllegalStateException("Can only transition from FILED to UNDER_REVIEW status");
+        }
+
+        claim.setStatus(request.getNewStatus());
+        Claim updatedClaim = claimRepository.save(claim);
+        return convertToResponse(updatedClaim);
     }
 }
