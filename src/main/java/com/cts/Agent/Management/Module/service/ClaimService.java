@@ -1,6 +1,9 @@
 package com.cts.Agent.Management.Module.service;
 import com.cts.Agent.Management.Module.dto.ClaimStatusUpdateRequest;
 import com.cts.Agent.Management.Module.exception.InvalidClaimStatusTransitionException;
+import com.cts.Agent.Management.Module.exception.PolicyValidationException;
+import com.cts.Agent.Management.Module.model.Policy;
+import com.cts.Agent.Management.Module.repository.PolicyRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,13 +20,25 @@ import org.springframework.transaction.annotation.Transactional;
 public class ClaimService {
 
     private final ClaimRepository claimRepository;
+    private final PolicyRepository policyRepository; // Add this
 
-    public ClaimService(ClaimRepository claimRepository) {
+    public ClaimService(ClaimRepository claimRepository, PolicyRepository policyRepository) {
         this.claimRepository = claimRepository;
+        this.policyRepository = policyRepository;
     }
-
     @Transactional
     public ClaimResponse submitClaim(ClaimCreateRequest request) {
+        // Check if policy exists
+        Policy policy = (Policy) policyRepository.findByPolicyNumber(request.getPolicyId())
+                .orElseThrow(() -> new PolicyValidationException(
+                        "Policy not found with policy number: " + request.getPolicyId()));
+
+        // Check if claim amount exceeds coverage amount
+        if (request.getAmount().compareTo(policy.getCoverageAmount()) > 0) {
+            throw new PolicyValidationException(
+                    STR."Claim amount \{request.getAmount()} exceeds policy coverage amount \{policy.getCoverageAmount()}");
+        }
+
         Claim claim = new Claim();
         claim.setPolicyId(request.getPolicyId());
         claim.setCustomerId(request.getCustomerId());
@@ -31,11 +46,9 @@ public class ClaimService {
         claim.setDescription(request.getDescription());
         claim.setStatus(Claim.ClaimStatus.FILED);
 
-        // Save to database
         Claim savedClaim = claimRepository.save(claim);
         return convertToResponse(savedClaim);
     }
-
     private ClaimResponse convertToResponse(Claim claim) {
         ClaimResponse response = new ClaimResponse();
         response.setId(claim.getId());
