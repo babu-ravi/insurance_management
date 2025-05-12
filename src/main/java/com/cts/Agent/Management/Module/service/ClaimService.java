@@ -1,5 +1,6 @@
 package com.cts.Agent.Management.Module.service;
 import com.cts.Agent.Management.Module.dto.ClaimStatusUpdateRequest;
+import com.cts.Agent.Management.Module.exception.InvalidClaimStatusTransitionException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -74,13 +75,27 @@ public class ClaimService {
         Claim claim = claimRepository.findById(id)
                 .orElseThrow(() -> new ClaimNotFoundException(id));
 
-        if (claim.getStatus() != Claim.ClaimStatus.FILED ||
-                request.getNewStatus() != Claim.ClaimStatus.UNDER_REVIEW) {
-            throw new IllegalStateException("Can only transition from FILED to UNDER_REVIEW status");
-        }
+        validateStatusTransition(claim.getStatus(), request.getNewStatus());
 
         claim.setStatus(request.getNewStatus());
+        claim.setReviewerComments(request.getReviewerComments());
         Claim updatedClaim = claimRepository.save(claim);
         return convertToResponse(updatedClaim);
+    }
+
+    private void validateStatusTransition(Claim.ClaimStatus currentStatus, Claim.ClaimStatus newStatus) {
+        if (currentStatus == Claim.ClaimStatus.FILED && newStatus == Claim.ClaimStatus.UNDER_REVIEW) {
+            return;
+        }
+
+        if (currentStatus == Claim.ClaimStatus.UNDER_REVIEW &&
+                (newStatus == Claim.ClaimStatus.APPROVED || newStatus == Claim.ClaimStatus.REJECTED)) {
+            return;
+        }
+
+        throw new InvalidClaimStatusTransitionException(
+                currentStatus.toString(),
+                newStatus.toString()
+        );
     }
 }

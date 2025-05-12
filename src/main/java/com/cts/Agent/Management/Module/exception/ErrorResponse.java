@@ -10,4 +10,7 @@ public class ErrorResponse {
 
     public ErrorResponse(int value, String message) {
     }
+
+    public ErrorResponse(String invalidStatusTransition, String message, int value) {
+    }
 }
