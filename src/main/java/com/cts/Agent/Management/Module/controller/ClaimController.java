@@ -19,4 +19,10 @@ public class ClaimController {
         ClaimResponse response = claimService.submitClaim(request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ClaimResponse> getClaimById(@PathVariable Long id) {
+        ClaimResponse claim = claimService.getClaimById(id);
+        return ResponseEntity.ok(claim);
+    }
 }

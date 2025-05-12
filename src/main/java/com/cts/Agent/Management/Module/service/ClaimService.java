@@ -2,6 +2,7 @@ package com.cts.Agent.Management.Module.service;
 
 import com.cts.Agent.Management.Module.dto.ClaimCreateRequest;
 import com.cts.Agent.Management.Module.dto.ClaimResponse;
+import com.cts.Agent.Management.Module.exception.ClaimNotFoundException;
 import com.cts.Agent.Management.Module.model.Claim;
 import com.cts.Agent.Management.Module.repository.ClaimRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,5 +44,12 @@ public class ClaimService {
         response.setCreatedAt(claim.getCreatedAt());
         response.setUpdatedAt(claim.getUpdatedAt());
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public ClaimResponse getClaimById(Long id) {
+        Claim claim = claimRepository.findById(id)
+                .orElseThrow(() -> new ClaimNotFoundException(id));
+        return convertToResponse(claim);
     }
 }
