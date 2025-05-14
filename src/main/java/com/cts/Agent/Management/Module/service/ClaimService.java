@@ -36,8 +36,10 @@ public class ClaimService {
         // Check if claim amount exceeds coverage amount
         if (request.getAmount().compareTo(policy.getCoverageAmount()) > 0) {
             throw new PolicyValidationException(
-                    STR."Claim amount \{request.getAmount()} exceeds policy coverage amount \{policy.getCoverageAmount()}");
+                    String.format("Claim amount %s exceeds policy coverage amount %s",
+                            request.getAmount(), policy.getCoverageAmount()));
         }
+
 
         Claim claim = new Claim();
         claim.setPolicyId(request.getPolicyId());

@@ -19,8 +19,7 @@ public class DataLoader {
             // Check if data already exists
             if (repository.count() > 0) {
                 return; // Skip initialization if data exists
-            }
-
+  }
             List<Policy> policies = new ArrayList<>();
 
             policies.add(new Policy(null, 111L, new BigDecimal("100000.00"), new BigDecimal("1000.00")));
